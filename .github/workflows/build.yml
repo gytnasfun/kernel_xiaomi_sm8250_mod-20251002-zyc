@@ -1,0 +1,26 @@
+name: build-thyme
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bc bison flex libssl-dev python3 git clang lld gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi
+      - name: config
+        run: |
+          cat arch/arm64/configs/umi_defconfig arch/arm64/configs/vendor/xiaomi/thyme.config > arch/arm64/configs/thyme_defconfig
+      - name: build
+        run: |
+          make O=out ARCH=arm64 SUBARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- thyme_defconfig
+          make O=out ARCH=arm64 SUBARCH=arm64 CC=clang CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- -j$(nproc)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: thyme-kernel
+          path: |
+            out/arch/arm64/boot/Image
+            out/arch/arm64/boot/Image.gz
+            out/arch/arm64/boot/Image.gz-dtb
